@@ -151,9 +151,7 @@ runKernel kOpts profileSrc = do
   interface <- serveProfile profile debug
 
   -- Create initial state in the directory the kernel *should* be in.
-  state <- initialKernelState
-  modifyMVar_ state $ \kernelState -> return $
-    kernelState { kernelDebug = debug }
+  state <- initialKernelState debug
 
   -- Receive and reply to all messages on the shell socket.
   interpret libdir True True $ \hasSupportLibraries -> do
@@ -169,7 +167,7 @@ runKernel kOpts profileSrc = do
         noWidget s _ = return s
         evaluator line = void $ do
           -- Create a new state each time.
-          stateVar <- liftIO initialKernelState
+          stateVar <- liftIO $ initialKernelState debug
           st <- liftIO $ takeMVar stateVar
           evaluate st line noPublish noWidget
 
@@ -229,8 +227,8 @@ runKernel kOpts profileSrc = do
           (key, _:val) -> setEnv key val
 
 -- Initial kernel state.
-initialKernelState :: IO (MVar KernelState)
-initialKernelState = newMVar defaultKernelState
+initialKernelState :: Bool -> IO (MVar KernelState)
+initialKernelState debug = newMVar $ defaultKernelState { kernelDebug = debug }
 
 -- | Create a new message header, given a parent message header.
 createReplyHeader :: MessageHeader -> Interpreter MessageHeader
